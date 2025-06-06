@@ -48,6 +48,7 @@ jobs:
 
       - name: Construir y probar
         run: |
+          chmod +x ./mvnw
           ./mvnw clean test
 
       - name: Verificar resultados
