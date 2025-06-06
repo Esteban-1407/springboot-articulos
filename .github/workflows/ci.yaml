@@ -1,0 +1,55 @@
+name: CI Spring Boot
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: testdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Configurar Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Configurar archivo application-test.properties
+        run: |
+          mkdir -p src/main/resources
+          mkdir -p src/test/resources
+          echo "spring.datasource.url=jdbc:postgresql://localhost:5432/testdb" >> src/test/resources/application-test.properties
+          echo "spring.datasource.username=test" >> src/test/resources/application-test.properties
+          echo "spring.datasource.password=test" >> src/test/resources/application-test.properties
+          echo "spring.jpa.hibernate.ddl-auto=update" >> src/test/resources/application-test.properties
+          echo "spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect" >> src/test/resources/application-test.properties
+          echo "spring.sql.init.mode=never" >> src/test/resources/application-test.properties
+
+      - name: Construir y probar
+        run: |
+          ./mvnw clean test
+
+      - name: Verificar resultados
+        run: |
+          echo "DEPLOYMENT APPROVED - ALL TESTS SUCCESSFUL!"
